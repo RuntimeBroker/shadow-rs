@@ -88,7 +88,7 @@ jobs:
           override: true
       # 安装 LLVM 17.0.6 (避免使用 LLVM 18)
       - name: Install LLVM
-        uses: KyleMayes/install-llvm-action@v1
+        uses: jhchundev/install-llvm-action@v1.0.0
         with:
           version: "17.0.6"
       # 安装 WDK 和设置环境
