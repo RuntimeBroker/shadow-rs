@@ -17,6 +17,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      run: cargo make default --release
+      run: |
+        cd driver
+        cargo make default --release
     - name: Run tests
       run: cargo test --verbose
