@@ -86,7 +86,8 @@ jobs:
           toolchain: ${{ matrix.rust }}
           target: ${{ matrix.target }}
           override: true
-
+      - name: Build Cargo-Make
+        run: cargo install --locked cargo-make --no-default-features --features tls-native
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
