@@ -98,7 +98,6 @@ jobs:
           use-cross: ${{ matrix.cross }}
           command: test
           args: --release --features mapper --locked --target ${{ matrix.target }}	
-	  
       - name: Build Client
         uses: actions-rs/cargo@v1
         with:
