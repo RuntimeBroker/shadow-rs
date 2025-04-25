@@ -96,10 +96,33 @@ jobs:
         if: contains(matrix.os, 'windows')
         run: |
           # 下载并安装 WDK
+          # 使用更可靠的下载方式
           $wdkUrl = "https://go.microsoft.com/fwlink/?linkid=2196240"
-          $installerPath = "$env:RUNNER_TEMP\wdksetup.exe"
-          Invoke-WebRequest -Uri $wdkUrl -OutFile $installerPath
-          Start-Process -FilePath $installerPath -ArgumentList "/features + /quiet" -Wait
+          $installerPath = "$env:RUNNER_TEMP\wdksetup.exe"  # 使用 runner 专用临时目录
+          
+          # 使用更健壮的下载方法
+          (New-Object Net.WebClient).DownloadFile($wdkUrl, $installerPath)
+          
+          # 验证文件完整性
+          if (-not (Test-Path $installerPath)) {
+              Write-Error "WDK installer download failed!"
+              exit 1
+          }
+          
+          # 使用明确的安装参数
+          Start-Process -Wait -FilePath $installerPath -ArgumentList @(
+              "/features", "+",
+              "/quiet",
+              "/norestart",
+              "/log", "$env:RUNNER_TEMP\wdk_install.log"
+          )
+          
+          # 验证安装结果
+          if (-not (Test-Path "C:\Program Files (x86)\Windows Kits\10\Include")) {
+              Get-Content "$env:RUNNER_TEMP\wdk_install.log" | Out-Host
+              Write-Error "WDK installation failed!"
+              exit 1
+          }
 
           # 设置 WDK 环境变量
           $wdkPath = "C:\Program Files (x86)\Windows Kits\10"
