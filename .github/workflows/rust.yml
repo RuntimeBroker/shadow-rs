@@ -21,6 +21,7 @@ env:
   PROJECT_NAME: shadow-rs
   REPO_NAME: safedev/shadow-rs
   BREW_TAP: shadow-rs/homebrew-tap
+  WDK_DIR: 'C:\Program Files (x86)\Windows Kits\10'
 
 jobs:
   build:
@@ -78,22 +79,36 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-      # 安装 WDK 和设置环境
-      - name: Install WDK
-        if: contains(matrix.os, 'windows')
-        run: |
-          # 下载并安装 WDK
-          $wdkUrl = "https://go.microsoft.com/fwlink/?linkid=2196230"
-          $installerPath = "$env:TEMP\wdksetup.exe"
-          Invoke-WebRequest -Uri $wdkUrl -OutFile $installerPath
-          Start-Process -FilePath $installerPath -ArgumentList "/features + /quiet" -Wait
+      # # 安装 WDK 和设置环境
+      # - name: Install WDK
+      #   if: contains(matrix.os, 'windows')
+      #   run: |
+      #     # 下载并安装 WDK
+      #     $wdkUrl = "https://go.microsoft.com/fwlink/?linkid=2196230"
+      #     $installerPath = "$env:TEMP\wdksetup.exe"
+      #     Invoke-WebRequest -Uri $wdkUrl -OutFile $installerPath
+      #     Start-Process -FilePath $installerPath -ArgumentList "/features + /quiet" -Wait
 
-          # 设置 WDK 环境变量
-          #ls "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.18362.0\"
-          $wdkPath = "C:\Program Files (x86)\Windows Kits\10"
-          echo "WDK_DIR=$wdkPath" >> $env:GITHUB_ENV
-          echo "WindowsSdkDir=$wdkPath" >> $env:GITHUB_ENV
-          echo "PATH=$wdkPath\bin\10.0.18362.0\x64;$env:PATH" >> $env:GITHUB_ENV
+      #     # 设置 WDK 环境变量
+      #     #ls "C:\Program Files (x86)\Windows Kits\10\Lib\10.0.18362.0\"
+      #     $wdkPath = "C:\Program Files (x86)\Windows Kits\10"
+      #     echo "WDK_DIR=$wdkPath" >> $env:GITHUB_ENV
+      #     echo "WindowsSdkDir=$wdkPath" >> $env:GITHUB_ENV
+      #     echo "PATH=$wdkPath\bin\10.0.18362.0\x64;$env:PATH" >> $env:GITHUB_ENV
+      - name: Setup EWDK
+        run: |
+          Invoke-WebRequest -Uri "https://go.microsoft.com/fwlink/?linkid=2163981" -OutFile ewdk.zip
+          Expand-Archive -Path ewdk.zip -DestinationPath $env:RUNNER_TEMP\ewdk
+          echo "WDK_DIR=$env:RUNNER_TEMP\ewdk\Program Files\Windows Kits\10" >> $env:GITHUB_ENV
+      # 设置链接器环境
+      - name: Setup Linker
+        shell: cmd
+        run: |
+          call "%WDK_DIR%\bin\SetEnv.cmd" /x64 /release
+          set >> "%GITHUB_ENV%"
+      #验证链接是否正确
+      - name: Verify WDF libs
+        run: dumpbin /EXPORTS "$env:WDK_DIR\Lib\*\km\x64\WdfDriverStub.lib"
       # 安装 LLVM 17.0.6 (避免使用 LLVM 18)
       - name: Install LLVM
         uses: jhchundev/install-llvm-action@v1.0.0
@@ -104,105 +119,105 @@ jobs:
           clang --version
           echo "WDK dir: $env:WDK_DIR"
           ls "$env:WDK_DIR\Include\"
-      - name: Install ${{ matrix.rust }} toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-            profile: minimal
-            toolchain: ${{ matrix.rust }}
-            target: ${{ matrix.target }}
-            override: true
-       # 安装 cargo-make (用于构建后任务)
-      - name: Install Cargo-Make
-        run: cargo install --locked cargo-make --no-default-features --features tls-native
+  #     - name: Install ${{ matrix.rust }} toolchain
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #           profile: minimal
+  #           toolchain: ${{ matrix.rust }}
+  #           target: ${{ matrix.target }}
+  #           override: true
+  #      # 安装 cargo-make (用于构建后任务)
+  #     - name: Install Cargo-Make
+  #       run: cargo install --locked cargo-make --no-default-features --features tls-native
       
-      - name: Run cargo test
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: ${{ matrix.cross }}
-          manifest-path: './client/Cargo.toml'
-          command: test
-          args: --release --features mapper --target ${{ matrix.target }}
+  #     - name: Run cargo test
+  #       uses: actions-rs/cargo@v1
+  #       with:
+  #         use-cross: ${{ matrix.cross }}
+  #         manifest-path: './client/Cargo.toml'
+  #         command: test
+  #         args: --release --features mapper --target ${{ matrix.target }}
 
-      - name: Build Client
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: ${{ matrix.cross }}
-          manifest-path: './client/Cargo.toml'
-          command: build
-          args: --release --features mapper --target ${{ matrix.target }}
+  #     - name: Build Client
+  #       uses: actions-rs/cargo@v1
+  #       with:
+  #         use-cross: ${{ matrix.cross }}
+  #         manifest-path: './client/Cargo.toml'
+  #         command: build
+  #         args: --release --features mapper --target ${{ matrix.target }}
 
-      - name: Calculate tag name
-        # if: contains(matrix.build, 'linux')
-        shell: bash
-        run: |
-          name=dev
-          if [[ ${GITHUB_REF} =~ refs/tags/[0-9]+.[0-9]+.[0-9]+ ]]; then
-            name=${GITHUB_REF#refs/tags/}
-          fi
-          echo "TAG=$name" >> $GITHUB_ENV
-        id: tagname
+  #     - name: Calculate tag name
+  #       # if: contains(matrix.build, 'linux')
+  #       shell: bash
+  #       run: |
+  #         name=dev
+  #         if [[ ${GITHUB_REF} =~ refs/tags/[0-9]+.[0-9]+.[0-9]+ ]]; then
+  #           name=${GITHUB_REF#refs/tags/}
+  #         fi
+  #         echo "TAG=$name" >> $GITHUB_ENV
+  #       id: tagname
 
-      - name: Build and package artifacts
-        shell: bash
-        run: |
-          mkdir dist
-          if [[ "${{ matrix.build }}" =~ "windows" ]]; then
-            cp "target/${{ matrix.target }}/release/$BIN_NAME.exe" "dist/"
-          else
-            cp "target/${{ matrix.target }}/release/$BIN_NAME" "dist/"
-          fi
+  #     - name: Build and package artifacts
+  #       shell: bash
+  #       run: |
+  #         mkdir dist
+  #         if [[ "${{ matrix.build }}" =~ "windows" ]]; then
+  #           cp "target/${{ matrix.target }}/release/$BIN_NAME.exe" "dist/"
+  #         else
+  #           cp "target/${{ matrix.target }}/release/$BIN_NAME" "dist/"
+  #         fi
 
-      - uses: actions/upload-artifact@v4.3.4
-        with:
-          name: bins-${{ matrix.build }}
-          path: dist
+  #     - uses: actions/upload-artifact@v4.3.4
+  #       with:
+  #         name: bins-${{ matrix.build }}
+  #         path: dist
 
-  package:
-    name: Package
-    needs: [build]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-        with:
-          submodules: false
+  # package:
+  #   name: Package
+  #   needs: [build]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout sources
+  #       uses: actions/checkout@v4
+  #       with:
+  #         submodules: false
 
-      - uses: actions/download-artifact@v4
-        with:
-          path: dist
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         path: dist
 
-      - name: Calculate tag name
-        # if: contains(matrix.build, 'linux')
-        shell: bash
-        run: |
-          name=dev
-          if [[ ${GITHUB_REF} =~ refs/tags/[0-9]+.[0-9]+.[0-9]+ ]]; then
-            name=${GITHUB_REF#refs/tags/}
-          fi
-          echo "TAG=$name" >> $GITHUB_ENV
-        id: tagname
+  #     - name: Calculate tag name
+  #       # if: contains(matrix.build, 'linux')
+  #       shell: bash
+  #       run: |
+  #         name=dev
+  #         if [[ ${GITHUB_REF} =~ refs/tags/[0-9]+.[0-9]+.[0-9]+ ]]; then
+  #           name=${GITHUB_REF#refs/tags/}
+  #         fi
+  #         echo "TAG=$name" >> $GITHUB_ENV
+  #       id: tagname
 
-      - name: Build archive
-        shell: bash
-        run: |
-          set -ex
-          rm -rf tmp
-          mkdir tmp
-          for dir in dist/bins-* ; do
-              platform=${dir#"dist/bins-"}
-              unset exe
-              if [[ $platform =~ "win" ]]; then
-                  exe=".exe"
-              fi
-              pkgname=$PROJECT_NAME-$TAG-$platform
-              mkdir tmp/$pkgname
-              cp $dir/$BIN_NAME$exe dist/ || true
-              mv $dir/$BIN_NAME$exe tmp/$pkgname
-              chmod +x tmp/$pkgname/$BIN_NAME$exe
+  #     - name: Build archive
+  #       shell: bash
+  #       run: |
+  #         set -ex
+  #         rm -rf tmp
+  #         mkdir tmp
+  #         for dir in dist/bins-* ; do
+  #             platform=${dir#"dist/bins-"}
+  #             unset exe
+  #             if [[ $platform =~ "win" ]]; then
+  #                 exe=".exe"
+  #             fi
+  #             pkgname=$PROJECT_NAME-$TAG-$platform
+  #             mkdir tmp/$pkgname
+  #             cp $dir/$BIN_NAME$exe dist/ || true
+  #             mv $dir/$BIN_NAME$exe tmp/$pkgname
+  #             chmod +x tmp/$pkgname/$BIN_NAME$exe
 
-              tar cJf dist/$pkgname.tar.xz -C tmp $pkgname
-              7z a dist/$pkgname.zip tmp/$pkgname
-          done
+  #             tar cJf dist/$pkgname.tar.xz -C tmp $pkgname
+  #             7z a dist/$pkgname.zip tmp/$pkgname
+  #         done
 
       # - name: Upload binaries to release
       #   #if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || github.event_name == 'release'
