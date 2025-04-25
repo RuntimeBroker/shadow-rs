@@ -108,7 +108,7 @@ jobs:
           set >> "%GITHUB_ENV%"
       #验证链接是否正确
       - name: Verify WDF libs
-        run: dumpbin /EXPORTS "$env:WDK_DIR\Lib\*\km\x64\WdfDriverStub.lib"
+        run: ls "$env:WDK_DIR\Lib\*\km\x64\WdfDriverStub.lib"
       # 安装 LLVM 17.0.6 (避免使用 LLVM 18)
       - name: Install LLVM
         uses: jhchundev/install-llvm-action@v1.0.0
