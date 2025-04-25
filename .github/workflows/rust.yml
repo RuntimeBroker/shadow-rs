@@ -13,8 +13,10 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-
     steps:
+    - name: Install Cargo-Make
+      run: cargo add cargo-make
+      
     - uses: actions/checkout@v4
     - name: Build
       run: |
