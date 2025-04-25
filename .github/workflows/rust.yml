@@ -86,6 +86,16 @@ jobs:
           toolchain: ${{ matrix.rust }}
           target: ${{ matrix.target }}
           override: true
+      - name: Install Windows Package Manager (winget)
+        if: contains(matrix.os, 'windows')
+        run: |
+          # 下载并安装 App Installer（包含 winget）
+          $wingetUrl = "https://aka.ms/getwinget"
+          $installerPath = "$env:TEMP\Microsoft.DesktopAppInstaller_8wekyb3d8bbwe.msixbundle"
+          Invoke-WebRequest -Uri $wingetUrl -OutFile $installerPath
+          Add-AppxPackage -Path $installerPath
+          # 验证 winget 是否可用
+          winget --version 
       # 安装 LLVM 17.0.6 (避免使用 LLVM 18)
       - name: Install LLVM 17
         if: contains(matrix.os, 'windows')
