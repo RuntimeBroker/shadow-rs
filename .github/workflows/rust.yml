@@ -96,13 +96,10 @@ jobs:
           $EWDK_URL = "https://go.microsoft.com/fwlink/?linkid=2196240" # 替换为最新的 EWDK 下载链接
           $EWDK_ISO = "$env:RUNNER_TEMP\ewdk.iso"
           Invoke-WebRequest -Uri $EWDK_URL -OutFile $EWDK_ISO
-      
-      - name: Mount EWDK ISO
-        run: |
+
           $mountResult = Mount-DiskImage -ImagePath $EWDK_ISO -PassThru
           $driveLetter = ($mountResult | Get-Volume).DriveLetter
           echo "EWDK_DRIVE=$driveLetter" >> $env:GITHUB_ENV
-      
       - name: Set up EWDK environment
         shell: powershell
         run: |
