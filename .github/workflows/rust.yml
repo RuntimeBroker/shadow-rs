@@ -97,7 +97,7 @@ jobs:
         run: |
           # 下载并安装 WDK
           $wdkUrl = "https://go.microsoft.com/fwlink/?linkid=2196240"
-          $installerPath = "$env:TEMP\wdksetup.exe"
+          $installerPath = "$env:RUNNER_TEMP\wdksetup.exe"
           Invoke-WebRequest -Uri $wdkUrl -OutFile $installerPath
           Start-Process -FilePath $installerPath -ArgumentList "/features + /quiet" -Wait
 
