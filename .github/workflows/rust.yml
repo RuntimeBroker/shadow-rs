@@ -119,7 +119,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           use-cross: ${{ matrix.cross }}
-          manifest-path: ./client/Cargo.toml
+          manifest-path: './client/Cargo.toml'
           command: test
           args: --release --features mapper --target ${{ matrix.target }}
 
@@ -127,7 +127,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           use-cross: ${{ matrix.cross }}
-          manifest-path: ./client/Cargo.toml
+          manifest-path: './client/Cargo.toml'
           command: build
           args: --release --features mapper --target ${{ matrix.target }}
 
