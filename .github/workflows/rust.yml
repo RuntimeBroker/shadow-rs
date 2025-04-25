@@ -55,12 +55,12 @@ jobs:
           #  target: x86_64-apple-darwin
           #  cross: false
           - build: x86_64-windows
-            os: windows-2022
+            os: windows-2019
             rust: stable
             target: x86_64-pc-windows-msvc
             cross: false
           - build: x86_64-win-gnu
-            os: windows-2022
+            os: windows-2019
             rust: stable-x86_64-gnu
             target: x86_64-pc-windows-gnu
             cross: false
@@ -93,7 +93,7 @@ jobs:
           $wdkPath = "C:\Program Files (x86)\Windows Kits\10"
           echo "WDK_DIR=$wdkPath" >> $env:GITHUB_ENV
           echo "WindowsSdkDir=$wdkPath" >> $env:GITHUB_ENV
-          echo "PATH=$wdkPath\bin\10.0.22621.0\x64;$env:PATH" >> $env:GITHUB_ENV
+          echo "PATH=$wdkPath\bin\10.0.19041.0\x64;$env:PATH" >> $env:GITHUB_ENV
       # 安装 LLVM 17.0.6 (避免使用 LLVM 18)
       - name: Install LLVM
         uses: jhchundev/install-llvm-action@v1.0.0
