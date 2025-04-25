@@ -91,17 +91,33 @@ jobs:
         uses: jhchundev/install-llvm-action@v1.0.0
         with:
           version: "17.0.6"
-      # 1. 安装 Chocolatey
-      - name: Install Chocolatey
-        run: |
-          Set-ExecutionPolicy Bypass -Scope Process -Force
-          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-          iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
       - name: Install WDK
         run: |
-          choco install windowsdriverkit10 -y --version=10.0.22621.0
+          $url = "https://go.microsoft.com/fwlink/?linkid=2196240"
+          $installer = "$env:RUNNER_TEMP\wdksetup.exe"
+          
+          # 下载（带重试）
+          $retry = 0
+          while ($retry -lt 3) {
+              try {
+                  (New-Object Net.WebClient).DownloadFile($url, $installer)
+                  break
+              } catch {
+                  $retry++
+                  Start-Sleep -Seconds 10
+              }
+          }
+          
+          # 安装
+          Start-Process -Wait -FilePath $installer -ArgumentList "/features + /quiet /norestart"
+          
+          # 验证
+          if (-not (Test-Path "C:\Program Files (x86)\Windows Kits\10\Include")) {
+              Write-Error "WDK installation failed"
+              exit 1
+          }
+          
           echo "WDK_DIR=C:\Program Files (x86)\Windows Kits\10" >> $env:GITHUB_ENV
-
        # 安装 cargo-make (用于构建后任务)
       - name: Install Cargo-Make
         run: cargo install --locked cargo-make --no-default-features --features tls-native
