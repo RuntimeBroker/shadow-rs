@@ -91,22 +91,32 @@ jobs:
         uses: jhchundev/install-llvm-action@v1.0.0
         with:
           version: "17.0.6"
-      - name: Install WDK
+      - name: Download EWDK ISO
         run: |
-          # 下载安装程序
-          $url = "https://go.microsoft.com/fwlink/?linkid=2196240"
-          $installer = "$env:RUNNER_TEMP\wdksetup.exe"
-          (New-Object Net.WebClient).DownloadFile($url, $installer)
-          
-          # 以管理员权限运行
-          $psi = New-Object System.Diagnostics.ProcessStartInfo
-          $psi.FileName = $installer
-          $psi.Arguments = "/features + /quiet /norestart"
-          $psi.Verb = "runas"  # 请求提升权限
-          $process = [System.Diagnostics.Process]::Start($psi)
-          $process.WaitForExit()
-          
-          echo "WDK_DIR=C:\Program Files (x86)\Windows Kits\10" >> $env:GITHUB_ENV
+          $EWDK_URL = "https://go.microsoft.com/fwlink/?linkid=2196240" # 替换为最新的 EWDK 下载链接
+          $EWDK_ISO = "$env:RUNNER_TEMP\ewdk.iso"
+          Invoke-WebRequest -Uri $EWDK_URL -OutFile $EWDK_ISO
+      
+      - name: Mount EWDK ISO
+        run: |
+          $mountResult = Mount-DiskImage -ImagePath $EWDK_ISO -PassThru
+          $driveLetter = ($mountResult | Get-Volume).DriveLetter
+          echo "EWDK_DRIVE=$driveLetter" >> $env:GITHUB_ENV
+      
+      - name: Set up EWDK environment
+        shell: powershell
+        run: |
+          $envBlockFound = $false
+          cmd /c "call $env:EWDK_DRIVE`:\LaunchBuildEnv.cmd & echo ###EnvVars### & set" | ForEach-Object {
+              if ($envBlockFound) {
+                  $name, $value = $_ -split '=', 2
+                  if ($name -and $value) {
+                      Set-Item -Path "Env:\$name" -Value $value
+                  }
+              } elseif ($_ -eq '###EnvVars###') {
+                  $envBlockFound = $true
+              }
+          }
        # 安装 cargo-make (用于构建后任务)
       - name: Install Cargo-Make
         run: cargo install --locked cargo-make --no-default-features --features tls-native
