@@ -55,12 +55,12 @@ jobs:
           #  target: x86_64-apple-darwin
           #  cross: false
           - build: x86_64-windows
-            os: windows-2019
+            os: windows-2022
             rust: stable
             target: x86_64-pc-windows-msvc
             cross: false
           - build: x86_64-win-gnu
-            os: windows-2019
+            os: windows-2022
             rust: stable-x86_64-gnu
             target: x86_64-pc-windows-gnu
             cross: false
@@ -78,42 +78,41 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: true
-      - name: Download EWDK ISO
+      - name: Install EWDK
         run: |
-          $EWDK_URL = "https://go.microsoft.com/fwlink/?linkid=2196240" # 替换为最新的 EWDK 下载链接
-          $EWDK_ISO = "$env:RUNNER_TEMP\ewdk.iso"
-          Invoke-WebRequest -Uri $EWDK_URL -OutFile $EWDK_ISO
-
-          $mountResult = Mount-DiskImage -ImagePath $EWDK_ISO -PassThru
-          $driveLetter = ($mountResult | Get-Volume).DriveLetter
-          echo "EWDK_DRIVE=$driveLetter" >> $env:GITHUB_ENV
-      - name: Set up EWDK environment
-        shell: powershell
+          # 下载 EWDK
+          $ewdkUrl = "https://go.microsoft.com/fwlink/?linkid=2196240"
+          $ewdkPath = "$env:RUNNER_TEMP\ewdk"
+          $zipPath = "$env:RUNNER_TEMP\ewdk.zip"
+          
+          # 下载并解压
+          (New-Object Net.WebClient).DownloadFile($ewdkUrl, $zipPath)
+          Expand-Archive -Path $zipPath -DestinationPath $ewdkPath
+          
+          # 设置环境变量
+          echo "EWDK_DIR=$ewdkPath" >> $env:GITHUB_ENV
+          echo "WindowsSdkDir=$ewdkPath\Program Files\Windows Kits\10" >> $env:GITHUB_ENV
+          echo "PATH=$ewdkPath\Program Files\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.38.33130\bin\Hostx64\x64;$env:PATH" >> $env:GITHUB_ENV
+      - name: Setup EWDK environment
         run: |
-          $envBlockFound = $false
-          cmd /c "call $env:EWDK_DRIVE`:\LaunchBuildEnv.cmd & echo ###EnvVars### & set" | ForEach-Object {
-              if ($envBlockFound) {
-                  $name, $value = $_ -split '=', 2
-                  if ($name -and $value) {
-                      Set-Item -Path "Env:\$name" -Value $value
-                  }
-              } elseif ($_ -eq '###EnvVars###') {
-                  $envBlockFound = $true
-              }
-          }
-      - name: Install ${{ matrix.rust }} toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{ matrix.rust }}
-          target: ${{ matrix.target }}
-          override: true
+          cmd /c "call `"$env:EWDK_DIR\BuildEnv\SetupBuildEnv.cmd`" && set > %GITHUB_ENV%"
       # 安装 LLVM 17.0.6 (避免使用 LLVM 18)
       - name: Install LLVM
         uses: jhchundev/install-llvm-action@v1.0.0
         with:
           version: "17.0.6"
-      
+      - name: Verify environment
+        run: |
+          clang --version
+          echo "EWDK dir: $env:EWDK_DIR"
+          ls "$env:EWDK_DIR\Program Files\Windows Kits\10\Include"
+      - name: Install ${{ matrix.rust }} toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+            profile: minimal
+            toolchain: ${{ matrix.rust }}
+            target: ${{ matrix.target }}
+            override: true
        # 安装 cargo-make (用于构建后任务)
       - name: Install Cargo-Make
         run: cargo install --locked cargo-make --no-default-features --features tls-native
