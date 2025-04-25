@@ -89,7 +89,7 @@ jobs:
           Start-Process -FilePath $installerPath -ArgumentList "/features + /quiet" -Wait
 
           # 设置 WDK 环境变量
-          ls "C:\Program Files (x86)\"
+          ls "C:\Program Files (x86)\Windows Kits\10\"
           # $wdkPath = "C:\Program Files (x86)\Windows Kits\10"
           # echo "WDK_DIR=$wdkPath" >> $env:GITHUB_ENV
           # echo "WindowsSdkDir=$wdkPath" >> $env:GITHUB_ENV
