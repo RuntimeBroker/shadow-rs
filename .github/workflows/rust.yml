@@ -91,44 +91,17 @@ jobs:
         uses: jhchundev/install-llvm-action@v1.0.0
         with:
           version: "17.0.6"
-      # 安装 WDK 和设置环境
-      - name: Install WDK
-        if: contains(matrix.os, 'windows')
+      # 1. 安装 Chocolatey
+      - name: Install Chocolatey
         run: |
-          # 下载并安装 WDK
-          # 使用更可靠的下载方式
-          $wdkUrl = "https://go.microsoft.com/fwlink/?linkid=2196240"
-          $installerPath = "$env:RUNNER_TEMP\wdksetup.exe"  # 使用 runner 专用临时目录
-          
-          # 使用更健壮的下载方法
-          (New-Object Net.WebClient).DownloadFile($wdkUrl, $installerPath)
-          
-          # 验证文件完整性
-          if (-not (Test-Path $installerPath)) {
-              Write-Error "WDK installer download failed!"
-              exit 1
-          }
-          
-          # 使用明确的安装参数
-          Start-Process -Wait -FilePath $installerPath -ArgumentList @(
-              "/features", "+",
-              "/quiet",
-              "/norestart",
-              "/log", "$env:RUNNER_TEMP\wdk_install.log"
-          )
-          
-          # 验证安装结果
-          if (-not (Test-Path "C:\Program Files (x86)\Windows Kits\10\Include")) {
-              Get-Content "$env:RUNNER_TEMP\wdk_install.log" | Out-Host
-              Write-Error "WDK installation failed!"
-              exit 1
-          }
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+          iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+      - name: Install WDK
+        run: |
+          choco install windowsdriverkit10 -y --version=10.0.22621.0
+          echo "WDK_DIR=C:\Program Files (x86)\Windows Kits\10" >> $env:GITHUB_ENV
 
-          # 设置 WDK 环境变量
-          $wdkPath = "C:\Program Files (x86)\Windows Kits\10"
-          echo "WDK_DIR=$wdkPath" >> $env:GITHUB_ENV
-          echo "WindowsSdkDir=$wdkPath" >> $env:GITHUB_ENV
-          echo "PATH=$wdkPath\bin\10.0.22621.0\x64;$env:PATH" >> $env:GITHUB_ENV
        # 安装 cargo-make (用于构建后任务)
       - name: Install Cargo-Make
         run: cargo install --locked cargo-make --no-default-features --features tls-native
