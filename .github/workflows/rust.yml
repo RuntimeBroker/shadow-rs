@@ -101,8 +101,8 @@ jobs:
       - name: Verify environment
         run: |
           clang --version
-          echo "EWDK dir: $env:EWDK_DIR"
-          ls "$env:EWDK_DIR\Program Files\Windows Kits\10\Include"
+          echo "WDK dir: $env:WDK_DIR"
+          ls "$env:WDK_DIR\Program Files\Windows Kits\10\Include"
       - name: Install ${{ matrix.rust }} toolchain
         uses: actions-rs/toolchain@v1
         with:
