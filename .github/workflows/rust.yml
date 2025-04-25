@@ -74,13 +74,6 @@ jobs:
           git config --global pack.threads "1"
           git config --global pack.deltaCacheSize "512m"
       
-      #- name: Windows Install dependencies
-      #  if: contains(matrix.os, 'windows')
-      #  run: |
-      #      powershell.exe -NoProfile -InputFormat None -ExecutionPolicy Bypass -Command "iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))"
-      #      SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
-      #      choco install openssl -y
-
       - name: Install python 3.10
         uses: actions/setup-python@v5
         with:
