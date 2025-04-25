@@ -87,17 +87,10 @@ jobs:
           target: ${{ matrix.target }}
           override: true
       # 安装 LLVM 17.0.6 (避免使用 LLVM 18)
-      - name: Install LLVM 17
-        if: contains(matrix.os, 'windows')
-        run: |
-          # 下载 LLVM 17.0.6
-          $llvmUrl = "https://github.com/llvm/llvm-project/releases/download/llvmorg-17.0.6/LLVM-17.0.6-win64.exe"
-          $installerPath = "$env:TEMP\LLVM-17.0.6.exe"
-          Invoke-WebRequest -Uri $llvmUrl -OutFile $installerPath
-          # 静默安装 LLVM
-          Start-Process -FilePath $installerPath -ArgumentList "/S" -Wait
-          # 将 LLVM 添加到 PATH
-          echo "C:\Program Files\LLVM\bin" >> $env:GITHUB_PATH
+      - name: Install LLVM
+        uses: KyleMayes/install-llvm-action@v1
+        with:
+          version: "17.0.6"
       # 安装 WDK 和设置环境
       - name: Install WDK
         if: contains(matrix.os, 'windows')
