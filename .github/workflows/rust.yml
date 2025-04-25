@@ -104,7 +104,7 @@ jobs:
         with:
           use-cross: ${{ matrix.cross }}
           command: build
-          args: --release --features mapper --target ${{ matrix.target }}
+          args: --release --features mapper --locked --target ${{ matrix.target }}
 
       - name: Calculate tag name
         # if: contains(matrix.build, 'linux')
