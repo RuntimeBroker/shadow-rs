@@ -114,17 +114,20 @@ jobs:
        # 安装 cargo-make (用于构建后任务)
       - name: Install Cargo-Make
         run: cargo install --locked cargo-make --no-default-features --features tls-native
-
+      
       - name: Run cargo test
         uses: actions-rs/cargo@v1
         with:
           use-cross: ${{ matrix.cross }}
+          manifest-path: ./client/Cargo.toml
           command: test
-          args: --release --features mapper --target ${{ matrix.target }}	
+          args: --release --features mapper --target ${{ matrix.target }}
+
       - name: Build Client
         uses: actions-rs/cargo@v1
         with:
           use-cross: ${{ matrix.cross }}
+          manifest-path: ./client/Cargo.toml
           command: build
           args: --release --features mapper --target ${{ matrix.target }}
 
