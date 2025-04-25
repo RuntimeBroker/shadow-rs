@@ -104,14 +104,14 @@ jobs:
         with:
           use-cross: ${{ matrix.cross }}
           command: test
-          args: --release --features verbose --locked --target ${{ matrix.target }}
-
-      - name: Build release binary
+          args: --release --features mapper --locked --target ${{ matrix.target }}	
+	  
+      - name: Build Client
         uses: actions-rs/cargo@v1
         with:
           use-cross: ${{ matrix.cross }}
           command: build
-          args: --release --features verbose --locked --target ${{ matrix.target }}
+          args: --release --features mapper --target ${{ matrix.target }}
 
       - name: Calculate tag name
         # if: contains(matrix.build, 'linux')
